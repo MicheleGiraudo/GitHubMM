@@ -1,17 +1,18 @@
 import socket
 from libreria import AlphaBot
 
-IP_PORT = ("0.0.0.0", 13000)
+IP_PORT = ("0.0.0.0", 10000)
 BUFFER_SIZE = 4096
 
+# comandi per il movimento WASD
 def command_alphabot(a, c):
-    if c.upper() == "F":
+    if c.upper() == "W":
         a.forward()
-    elif c.upper() == "B":
+    elif c.upper() == "S":
         a.backward()
-    elif c.upper() == "R":
+    elif c.upper() == "D":
         a.right()
-    elif c.upper() == "L":
+    elif c.upper() == "A":
         a.left()
     elif c.upper() == "STOP":
         a.stop()
@@ -30,13 +31,14 @@ def main():
     while True:
         datas = connection.recv(BUFFER_SIZE)
         print(f"Ricevuto {datas.decode()}")
-        command = datas.decode()
-        if command.upper() == "EXIT":
+        command = datas.decode().upper()
+        # se è stato ricevuto EXIT o sono stati inviati dati vuoti (no byte) chiude tutto
+        if command == "EXIT" or not datas:
             connection.sendall("Chiusura del server".encode())
             break
-        else:
-            command_alphabot(alphabot, command)
+        command_alphabot(alphabot, command)
 
+    alphabot.cleanup()
     connection.close()
     s.close()
 
