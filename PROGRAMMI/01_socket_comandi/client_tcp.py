@@ -1,44 +1,46 @@
 import socket
 from pynput import keyboard
 
-IP_PORT = ("192.168.0.215", 10000)  #ip alphabot
-BUFFER_SIZE = 4096
+IP_PORT = ("192.168.0.215", 10000)  # ip alphabot
 
-COMANDI = {"w": "W", "s": "S", "a":"A", "d":"D"} # comandi tastiera come i giochi
+COMANDI = {"w": "W", "s": "S", "a": "A", "d": "D"}
 
-tasto_attivo = None  # Il tasto che sta venendo premuto al momento
+tasto_attivo = None
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)  # invia subito, senza attese
 s.connect(IP_PORT)
 print("Connessione effettuata!")
 print("Tieni premuto W, S, A, D per muoverti. ESC per uscire.")
 
+def invia(msg):
+    s.sendall((msg + "\n").encode())  # \n = fine comando
+
 def premuto(tasto):
     global tasto_attivo
     c = getattr(tasto, "char", None)
+    if c is not None:
+        c = c.lower()  # funziona anche con Caps Lock / Shift
     if c in COMANDI and tasto_attivo != c:
         tasto_attivo = c
-        s.sendall(COMANDI[c].encode())
+        invia(COMANDI[c])
 
 def rilasciato(tasto):
     global tasto_attivo
-    #se il tasto rilasciato è esc manda EXIT per far chiudere il server
     if tasto == keyboard.Key.esc:
-        s.sendall("EXIT".encode())
+        invia("EXIT")
         return False
     c = getattr(tasto, "char", None)
-    #se viene rilasciato il tasto che stava pilotando l'alphabot invia STOP per fermare
-    if c == tasto_attivo:
+    if c is not None:
+        c = c.lower()
+    if c is not None and c == tasto_attivo:
         tasto_attivo = None
-        s.sendall("STOP".encode())
+        invia("STOP")
 
 def main():
-    #imposta l'ascoltatore sulla tastiera che chiama premuto e rilasciato
     with keyboard.Listener(on_press=premuto, on_release=rilasciato) as listener:
         listener.join()
-
     s.close()
-
 
 if __name__ == "__main__":
     main()
